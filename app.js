@@ -2,13 +2,19 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const request = require("request");
 const mongoose = require("mongoose");
+const { emit } = require("nodemon");
+const path = require('path');
+
+const apiRoute = require("./routes/api");
 
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json()); 
 
 
 app.use(express.static("public"));
+app.use("/api", apiRoute);
 mongoose.connect("mongodb://localhost:27017/CIU",{useNewUrlParser:true});
 
 
@@ -19,17 +25,12 @@ const People = {
 const Student = mongoose.model("student",People);
 
 app.get("/",function(req,res){
-
-    res.sendFile(__dirname+"/index.html");
-    
+    res.sendFile(path.join(__dirname, "login.html")); 
 });
 
-app.get("/login.html", function(req, res){
-    res.sendFile(__dirname+"/login.html");
+app.get("/register", function(req, res){
+    res.sendFile(path.join(__dirname, "index.html"));
 });
-
-
-  
 
 
 app.post("/", function(req, res) {
@@ -48,6 +49,41 @@ app.post("/", function(req, res) {
       res.redirect("/");
     }
 });
+
+app.post("/action_page.php", function(req, res) {
+    const email = req.body.uname;
+    const password = req.body.psw;
+  
+    console.log(email, password);
+  
+    let loginFound = false;
+  
+    Student.find().then((students) => {
+      for (let i = 0; i < students.length; i++) {
+        console.log(students[i].email);
+        if (email == students[i].email && password == students[i].password) {
+          console.log("information found");
+          loginFound = true;
+          break;
+        }
+      }
+  
+      if (loginFound) {
+        localStorage("auth",true);
+        res.redirect("/");
+        
+      } else {
+        console.log("information don't match")
+        res.redirect("/login.html");
+      }
+    }).catch((err) => {
+      console.log(err);
+      res.status(500).send("Error connecting to database");
+    }).finally(() => {
+      
+    });
+});
+  
   
 
 
